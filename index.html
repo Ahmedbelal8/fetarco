@@ -307,7 +307,7 @@
 
     <script>
         // Move these declarations to the top of your script
-        let menuItems = ['Coffee', 'Bagel', 'Croissant', 'Orange Juice'];
+        let menuItems = ['Coffee', 'Croissant'];
         let teamOrders = [];
         let currentOrder = [];
         let userName = "";
@@ -340,8 +340,11 @@
                     orderPlaced = data.orderPlaced || false;
                     individualPayments = data.individualPayments || {};
                     billDetails = data.billDetails || {};
+                    if (billDetails.itemCounts === undefined) {
+                        billDetails.itemCounts = data.itemCounts || {};  // Add this line
+                    }
                     updateUI();
-                    updateBillEntryStatus(data.billEntryReady || false);  // Add this line
+                    updateBillEntryStatus(data.billEntryReady || false);
                 }
                 
                 // Set up real-time listeners after initial load
@@ -373,7 +376,11 @@
             });
 
             database.ref('breakfastOrder/itemCounts').on('value', (snapshot) => {
-                billDetails.itemCounts = snapshot.val() || {};
+                const itemCounts = snapshot.val() || {};
+                if (!billDetails.itemCounts) {
+                    billDetails.itemCounts = {};
+                }
+                Object.assign(billDetails.itemCounts, itemCounts);
                 populateBillDetailsForm();
             });
             
@@ -712,21 +719,28 @@
         }
 
         function resetPage() {
-            // ... existing reset code ...
+            teamOrders = []
+            currentOrder = []
+            userName = ""
+            orderPlaced = false
+            individualPayments = {}
+            billDetails = {}
+            
             database.ref('breakfastOrder').update({
                 teamOrders: [],
                 orderPlaced: false,
                 individualPayments: {},
                 billDetails: {},
-                billEntryReady: false  // Add this line
+                billEntryReady: false,
+                itemCounts: null  // Add this line to reset itemCounts
             }).then(() => {
-                console.log('Firebase data reset');
-                updateUI();
-                updateBillEntryStatus(false);  // Add this line
-                alert('The page has been reset. You can start a new order now.');
+                console.log('Firebase data reset')
+                updateUI()
+                updateBillEntryStatus(false)
+                alert('The page has been reset. You can start a new order now.')
             }).catch((error) => {
-                console.error('Error resetting Firebase data:', error);
-            });
+                console.error('Error resetting Firebase data:', error)
+            })
         }
 
         updateUI();
