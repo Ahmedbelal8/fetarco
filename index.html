@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team Breakfast Orders</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --background-color: #f5f7fa;
+            --text-color: #34495e;
+            --card-background: #ffffff;
+            --border-radius: 8px;
+            --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--background-color);
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        nav {
+            background-color: var(--primary-color);
+            padding: 1rem;
+            color: white;
+        }
+
+        nav .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        nav h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        nav span {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .card {
+            background-color: var(--card-background);
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        h2, h3 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+        }
+
+        input, select, button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            font-size: 16px;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        #orderList, #teamOrders {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        #orderList li, .order {
+            background-color: #f9f9f9;
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        #orderSummary {
+            background-color: #e8f5e9; /* Light green background */
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        #resetBtn {
+            background-color: #e74c3c;
+            margin-top: 30px;
+        }
+
+        #resetBtn:hover {
+            background-color: #c0392b;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        #newItemSection {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        #newItemName {
+            flex-grow: 1;
+            margin-right: 10px;
+            margin-bottom: 0;
+        }
+
+        #addNewItemBtn {
+            width: auto;
+            padding: 10px 15px;
+            background-color: var(--secondary-color);
+        }
+
+        #addNewItemBtn:hover {
+            background-color: #27ae60;
+        }
+
+        #itemSelectContainer {
+            display: flex;
+            margin-bottom: 15px;
+        }
+
+        #itemSelect {
+            flex-grow: 1;
+            margin-right: 10px;
+        }
+
+        #itemSelectContainer button {
+            width: auto;
+        }
+
+        .icon-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .icon-button i {
+            margin-right: 8px;
+        }
+
+        /* Add these new styles */
+        #allOrders {
+            background-color: #f0f8ff; /* Light blue background */
+        }
+
+        #teamOrders .order {
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: var(--border-radius);
+            transition: background-color 0.3s ease;
+        }
+
+        #teamOrders .order:nth-child(odd) {
+            background-color: #e6f3ff; /* Lighter blue for odd items */
+        }
+
+        #teamOrders .order:nth-child(even) {
+            background-color: #ffffff; /* White for even items */
+        }
+
+        #teamOrders .order:hover {
+            background-color: #d4e9ff; /* Slightly darker blue on hover */
+        }
+
+        #orderSummary {
+            background-color: #e8f5e9; /* Light green background */
+        }
+
+        #summaryContent ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        #summaryContent li {
+            padding: 10px;
+            margin-bottom: 5px;
+            background-color: #c8e6c9; /* Lighter green for list items */
+            border-radius: var(--border-radius);
+        }
+
+        #summaryContent li:hover {
+            background-color: #a5d6a7; /* Slightly darker green on hover */
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="container">
+            <h1><i class="fas fa-utensils"></i> FetarCo</h1>
+            <span>Developed By Belal & AI</span>
+        </div>
+    </nav>
+    <div class="container">
+        <div id="startOrderSection" class="card">
+            <h3><i class="fas fa-user"></i> Enter Your Name</h3>
+            <input type="text" id="userName" placeholder="Your Name" required>
+            <button onclick="addPerson()" class="icon-button"><i class="fas fa-play"></i> Start Order</button>
+        </div>
+
+        <div id="orderSection" style="display: none;" class="card">
+            <h3><i class="fas fa-plus-circle"></i> Add Item to Your Order</h3>
+            <div id="itemSelectContainer">
+                <select id="itemSelect"></select>
+                <button onclick="addItemToOrder()" class="icon-button"><i class="fas fa-plus"></i> Add to My Order</button>
+            </div>
+
+            <div id="newItemSection">
+                <input type="text" id="newItemName" placeholder="New Item Name">
+                <button id="addNewItemBtn" onclick="addNewItem()" class="icon-button"><i class="fas fa-plus"></i></button>
+            </div>
+
+            <h3><i class="fas fa-list"></i> Your Order</h3>
+            <ul id="orderList"></ul>
+            <button onclick="finalizeOrder()" class="icon-button"><i class="fas fa-check"></i> Finalize My Order</button>
+        </div>
+
+        <div id="allOrders" class="card">
+            <h3><i class="fas fa-users"></i> All Team Orders</h3>
+            <div id="teamOrders"></div>
+        </div>
+
+        <div id="orderSummary" class="card">
+            <h3><i class="fas fa-clipboard-list"></i> Order Summary</h3>
+            <div id="summaryContent"></div>
+        </div>
+
+        <button onclick="placeWholeOrder()" style="display: none;" id="placeWholeOrderBtn" class="icon-button"><i class="fas fa-shopping-cart"></i> Place the Whole Order</button>
+
+        <div id="billSection" style="display: none;" class="card">
+            <h3><i class="fas fa-file-invoice-dollar"></i> Enter Bill Details</h3>
+            <form id="billForm">
+                <table id="itemPricesTable">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Quantity</th>
+                            <th>Price per Item</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <input type="number" id="vatRate" placeholder="VAT Rate (%)" step="0.01">
+                <input type="number" id="deliveryFee" placeholder="Delivery Fee" step="0.01">
+                <button type="button" onclick="calculateFinalBill()" class="icon-button"><i class="fas fa-calculator"></i> Calculate Final Bill</button>
+            </form>
+        </div>
+
+        <div id="finalBill" class="card"></div>
+
+        <button onclick="resetPage()" id="resetBtn" class="icon-button"><i class="fas fa-redo"></i> Reset Page</button>
+    </div>
+
+    <script>
+        // Move these declarations to the top of your script
+        let menuItems = ['Coffee', 'Bagel', 'Croissant', 'Orange Juice'];
+        let teamOrders = [];
+        let currentOrder = [];
+        let userName = "";
+        let orderPlaced = false;
+        let individualPayments = {};
+        let billDetails = {};
+
+        // Firebase configuration and initialization
+        const firebaseConfig = { /* Your config here */ 
+
+            apiKey: "AIzaSyDjmgjlN_lsJc9gI3gXzMz22NVQJE3JsMU",
+            authDomain: "team-breakfast.firebaseapp.com",
+            databaseURL: "https://team-breakfast-default-rtdb.firebaseio.com",
+            projectId: "team-breakfast",
+            storageBucket: "team-breakfast.appspot.com",
+            messagingSenderId: "118596711553",
+            appId: "1:118596711553:web:273e7cf0645c57d0730980",
+            measurementId: "G-1JK8WKE0GD"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // Load initial data and set up real-time listeners
+        function initializeApp() {
+            database.ref('breakfastOrder').once('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    menuItems = data.menuItems || menuItems;
+                    teamOrders = data.teamOrders || teamOrders;
+                    orderPlaced = data.orderPlaced || false;
+                    individualPayments = data.individualPayments || {};
+                    billDetails = data.billDetails || {};
+                    updateUI();
+                    updateBillEntryStatus(data.billEntryReady || false);  // Add this line
+                }
+                
+                // Set up real-time listeners after initial load
+                setupListeners();
+            });
+        }
+
+        function setupListeners() {
+            database.ref('breakfastOrder/teamOrders').on('value', (snapshot) => {
+                teamOrders = snapshot.val() || [];
+                updateTeamOrders();
+                updateSummary();
+            });
+
+            database.ref('breakfastOrder/orderPlaced').on('value', (snapshot) => {
+                orderPlaced = snapshot.val() || false;
+                console.log('Order placed status changed:', orderPlaced);
+                updateOrderPlacedStatus();
+            });
+
+            database.ref('breakfastOrder/individualPayments').on('value', (snapshot) => {
+                individualPayments = snapshot.val() || {};
+                displayIndividualPayments();
+            });
+            database.ref('breakfastOrder/billDetails').on('value', (snapshot) => {
+            billDetails = snapshot.val() || {};
+            populateBillDetailsForm();
+                displayBillDetails();
+            });
+
+            database.ref('breakfastOrder/itemCounts').on('value', (snapshot) => {
+                billDetails.itemCounts = snapshot.val() || {};
+                populateBillDetailsForm();
+            });
+            
+            database.ref('breakfastOrder/billEntryReady').on('value', (snapshot) => {
+                const billEntryReady = snapshot.val() || false;
+                updateBillEntryStatus(billEntryReady);
+            });
+        }
+
+        // Call this function to start the app
+        initializeApp();
+
+        function updateOrderPlacedStatus() {
+            console.log('Updating order placed status. orderPlaced:', orderPlaced);
+            if (orderPlaced) {
+                document.getElementById('startOrderSection').style.display = 'none';
+                document.getElementById('placeWholeOrderBtn').style.display = 'none';
+                document.getElementById('billSection').style.display = 'block';
+                populateBillDetailsForm();
+            } else {
+                document.getElementById('startOrderSection').style.display = 'block';
+                document.getElementById('placeWholeOrderBtn').style.display = teamOrders.length > 0 ? 'block' : 'none';
+                document.getElementById('billSection').style.display = 'none';
+            }
+        }
+
+        function updateUI() {
+            updateItemSelect();
+            updateTeamOrders();
+            updateSummary();
+            updateOrderPlacedStatus();
+        }
+
+        function saveToFirebase() {
+            database.ref('breakfastOrder').set({
+                menuItems: menuItems,
+                teamOrders: teamOrders,
+                orderPlaced: orderPlaced,
+                individualPayments: individualPayments,
+                billDetails: billDetails
+            });
+        }
+
+        function addPerson() {
+            if (orderPlaced) {
+                alert('The whole order has been placed. Reset the page to start a new order.');
+                return;
+            }
+            userName = document.getElementById('userName').value;
+            if (userName) {
+                document.getElementById('orderSection').style.display = 'block';
+                updateItemSelect();
+                const existingOrderIndex = teamOrders.findIndex(order => order.name === userName);
+                if (existingOrderIndex !== -1) {
+                    currentOrder = teamOrders[existingOrderIndex].items;
+                    updateOrderList();
+                    alert('Your existing order has been loaded. You can modify it now.');
+                }
+            } else {
+                alert('Please enter your name.');
+            }
+        }
+
+        function updateItemSelect() {
+            const select = document.getElementById('itemSelect');
+            select.innerHTML = '';
+            menuItems.forEach(item => {
+                const option = document.createElement('option');
+                option.text = item;
+                option.value = item;
+                select.add(option);
+            });
+        }
+
+        function addItemToOrder() {
+            const item = document.getElementById('itemSelect').value;
+            currentOrder.push(item);
+            updateOrderList();
+        }
+
+        function updateOrderList() {
+            const orderList = document.getElementById('orderList');
+            orderList.innerHTML = '';
+            currentOrder.forEach(item => {
+                const li = document.createElement('li');
+                li.textContent = item;
+                orderList.appendChild(li);
+            });
+        }
+
+        function addNewItem() {
+            const newItem = document.getElementById('newItemName').value.trim();
+            if (newItem && !menuItems.includes(newItem)) {
+                menuItems.push(newItem);
+                updateItemSelect();
+                document.getElementById('newItemName').value = '';
+                saveToFirebase();
+                alert(`"${newItem}" has been added to the menu.`);
+            } else if (menuItems.includes(newItem)) {
+                alert('This item already exists in the menu.');
+            } else {
+                alert('Please enter a valid item name.');
+            }
+        }
+
+        function finalizeOrder() {
+            if (currentOrder.length > 0) {
+                const existingOrderIndex = teamOrders.findIndex(order => order.name === userName);
+                if (existingOrderIndex !== -1) {
+                    teamOrders[existingOrderIndex].items = currentOrder;
+                } else {
+                    teamOrders.push({ name: userName, items: currentOrder });
+                }
+                saveToFirebase();
+                currentOrder = [];
+                updateOrderList();
+                document.getElementById('orderSection').style.display = 'none';
+                updateTeamOrders();
+                updateSummary();
+                document.getElementById('placeWholeOrderBtn').style.display = 'block';
+            } else {
+                alert('Please add items to your order before finalizing.');
+            }
+        }
+
+        function updateTeamOrders() {
+            const teamOrdersDiv = document.getElementById('teamOrders');
+            teamOrdersDiv.innerHTML = '';
+            teamOrders.forEach(order => {
+                const orderDiv = document.createElement('div');
+                orderDiv.className = 'order';
+                orderDiv.innerHTML = `<strong>${order.name}:</strong> ${order.items.join(', ')}`;
+                teamOrdersDiv.appendChild(orderDiv);
+            });
+        }
+
+        function updateSummary() {
+            const summaryContent = document.getElementById('summaryContent');
+            const allItems = teamOrders.flatMap(order => order.items);
+            const itemCounts = allItems.reduce((acc, item) => {
+                acc[item] = (acc[item] || 0) + 1;
+                return acc;
+            }, {});
+
+            let summaryHtml = '<ul>';
+            for (const [item, count] of Object.entries(itemCounts)) {
+                summaryHtml += `<li><strong>${item}:</strong> ${count}</li>`;
+            }
+            summaryHtml += '</ul>';
+
+            summaryContent.innerHTML = summaryHtml;
+        }
+
+        function placeWholeOrder() {
+            console.log('Placing whole order');
+            if (teamOrders.length === 0) {
+                alert('No orders have been placed yet.');
+                return;
+            }
+
+            const allItems = teamOrders.flatMap(order => order.items);
+            const itemCounts = allItems.reduce((acc, item) => {
+                acc[item] = (acc[item] || 0) + 1;
+                return acc;
+            }, {});
+            
+            let orderSummary = "Order Summary:\n";
+            for (const [item, count] of Object.entries(itemCounts)) {
+                orderSummary += `${item}: ${count}\n`;
+            }
+            
+            alert(orderSummary);
+
+            orderPlaced = true;
+            database.ref('breakfastOrder').update({
+                orderPlaced: true,
+                itemCounts: itemCounts,
+                billEntryReady: true  // Add this line
+            }).then(() => {
+                console.log('Order placed status, item counts, and bill entry ready flag updated in Firebase');
+                updateOrderPlacedStatus();
+            }).catch((error) => {
+                console.error('Error updating order placed status:', error);
+            });
+        }
+
+        function calculateFinalBill() {
+            console.log('Calculating final bill');
+            const vatRate = parseFloat(document.getElementById('vatRate').value) / 100;
+            const deliveryFee = parseFloat(document.getElementById('deliveryFee').value);
+            const itemPrices = Array.from(document.getElementsByClassName('itemPrice')).map(input => parseFloat(input.value));
+
+            if (isNaN(vatRate) || isNaN(deliveryFee) || itemPrices.some(isNaN)) {
+                alert('Please enter valid prices, VAT rate, and delivery fee.');
+                return;
+            }
+
+            const rows = document.querySelectorAll("#itemPricesTable tbody tr");
+            let totalBeforeVAT = 0;
+            const itemTotals = {};
+
+            rows.forEach((row, index) => {
+                const item = row.cells[0].textContent;
+                const quantity = parseInt(row.cells[1].textContent);
+                const price = itemPrices[index];
+                const total = quantity * price;
+                totalBeforeVAT += total;
+                itemTotals[item] = { quantity, price, total };
+            });
+
+            let vat = totalBeforeVAT * vatRate;
+            let total = totalBeforeVAT + vat + deliveryFee;
+
+            billDetails = {
+                items: itemTotals,
+                vatRate: vatRate,
+                deliveryFee: deliveryFee,
+                totalBeforeVAT: totalBeforeVAT,
+                vat: vat,
+                total: total,
+                itemCounts: billDetails.itemCounts
+            };
+
+            calculateIndividualPayments(itemTotals, vatRate, deliveryFee);
+
+            // Save both billDetails and individualPayments to Firebase
+            database.ref('breakfastOrder').update({
+                billDetails: billDetails,
+                individualPayments: individualPayments
+            }).then(() => {
+                console.log('Bill details and individual payments saved to Firebase');
+                displayBillDetails();
+                displayIndividualPayments();
+            }).catch((error) => {
+                console.error('Error saving bill details and individual payments:', error);
+            });
+        }
+
+        function calculateIndividualPayments(itemTotals, vatRate, deliveryFee) {
+            individualPayments = {};
+            teamOrders.forEach(order => {
+                let individualSubtotal = order.items.reduce((sum, item) => sum + itemTotals[item].price, 0);
+                let individualVAT = individualSubtotal * vatRate;
+                let individualDeliveryFee = deliveryFee / teamOrders.length;
+                let individualTotal = individualSubtotal + individualVAT + individualDeliveryFee;
+
+                individualPayments[order.name] = {
+                    items: order.items,
+                    subtotal: individualSubtotal,
+                    vat: individualVAT,
+                    deliveryFee: individualDeliveryFee,
+                    total: individualTotal
+                };
+            });
+        }
+
+        function displayBillDetails() {
+            const billSectionDiv = document.getElementById('billSection');
+            if (Object.keys(billDetails).length === 0) {
+                billSectionDiv.innerHTML = '<p>Bill details not available yet.</p>';
+                return;
+            }
+
+            let billHtml = `<h3>Bill Details</h3>
+                            <table>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Quantity</th>
+                                    <th>Price</th>
+                                    <th>Total</th>
+                                </tr>`;
+
+            for (const [item, details] of Object.entries(billDetails.items)) {
+                billHtml += `<tr>
+                                <td>${item}</td>
+                                <td>${details.quantity}</td>
+                                <td>$${details.price.toFixed(2)}</td>
+                                <td>$${details.total.toFixed(2)}</td>
+                            </tr>`;
+            }
+
+            billHtml += `</table>
+                         <p>Subtotal: $${billDetails.totalBeforeVAT.toFixed(2)}</p>
+                         <p>VAT (${(billDetails.vatRate * 100).toFixed(2)}%): $${billDetails.vat.toFixed(2)}</p>
+                         <p>Delivery Fee: $${billDetails.deliveryFee.toFixed(2)}</p>
+                         <p>Total: $${billDetails.total.toFixed(2)}</p>`;
+
+            // Create a new div for bill details
+            const billDetailsDiv = document.createElement('div');
+            billDetailsDiv.id = 'billDetailsContent';
+            billDetailsDiv.innerHTML = billHtml;
+
+            // Find the existing bill details content (if any) and replace it
+            const existingBillDetails = billSectionDiv.querySelector('#billDetailsContent');
+            if (existingBillDetails) {
+                billSectionDiv.replaceChild(billDetailsDiv, existingBillDetails);
+            } else {
+                // If it doesn't exist, append it after the form
+                const form = billSectionDiv.querySelector('form') || billSectionDiv.lastElementChild;
+                form.insertAdjacentElement('afterend', billDetailsDiv);
+            }
+        }
+
+        function displayIndividualPayments() {
+            const finalBillDiv = document.getElementById('finalBill');
+            if (!individualPayments || Object.keys(individualPayments).length === 0) {
+                finalBillDiv.innerHTML = '<p>No payments calculated yet.</p>';
+                return;
+            }
+
+            let billHtml = `<h3>Individual Payments</h3>
+                            <table>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Items</th>
+                                    <th>Subtotal</th>
+                                    <th>VAT</th>
+                                    <th>Delivery Fee Share</th>
+                                    <th>Total</th>
+                                </tr>`;
+
+            for (const [name, payment] of Object.entries(individualPayments)) {
+                billHtml += `<tr>
+                                <td>${name}</td>
+                                <td>${payment.items.join(', ')}</td>
+                                <td>$${payment.subtotal.toFixed(2)}</td>
+                                <td>$${payment.vat.toFixed(2)}</td>
+                                <td>$${payment.deliveryFee.toFixed(2)}</td>
+                                <td>$${payment.total.toFixed(2)}</td>
+                            </tr>`;
+            }
+
+            billHtml += '</table>';
+
+            finalBillDiv.innerHTML = billHtml;
+        }
+
+        function resetPage() {
+            // ... existing reset code ...
+            database.ref('breakfastOrder').update({
+                teamOrders: [],
+                orderPlaced: false,
+                individualPayments: {},
+                billDetails: {},
+                billEntryReady: false  // Add this line
+            }).then(() => {
+                console.log('Firebase data reset');
+                updateUI();
+                updateBillEntryStatus(false);  // Add this line
+                alert('The page has been reset. You can start a new order now.');
+            }).catch((error) => {
+                console.error('Error resetting Firebase data:', error);
+            });
+        }
+
+        updateUI();
+
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("DOM fully loaded");
+            const calculateButton = document.querySelector('#billSection button');
+            if (calculateButton) {
+                console.log("Calculate button found");
+                calculateButton.addEventListener('click', function(event) {
+                    console.log("Calculate button clicked");
+                    calculateFinalBill();
+                });
+            } else {
+                console.error('Calculate Final Bill button not found');
+            }
+
+            const testButton = document.getElementById('testCalculateBtn');
+            if (testButton) {
+                console.log("Test button found");
+            } else {
+                console.error('Test button not found');
+            }
+        });
+
+        function populateBillDetailsForm() {
+            const tableBody = document.querySelector("#itemPricesTable tbody");
+            if (tableBody) {
+                tableBody.innerHTML = '';
+                
+                for (const [item, count] of Object.entries(billDetails.itemCounts)) {
+                    const row = tableBody.insertRow();
+                    row.insertCell(0).textContent = item;
+                    row.insertCell(1).textContent = count;
+                    const priceCell = row.insertCell(2);
+                    const priceInput = document.createElement('input');
+                    priceInput.type = 'number';
+                    priceInput.step = '0.01';
+                    priceInput.placeholder = 'Enter price';
+                    priceInput.className = 'itemPrice';
+                    priceInput.value = billDetails.items && billDetails.items[item] ? billDetails.items[item].price : '';
+                    priceCell.appendChild(priceInput);
+                }
+            } else {
+                console.error('Table body element not found');
+            }
+
+            document.getElementById('vatRate').value = billDetails.vatRate ? (billDetails.vatRate * 100).toFixed(2) : '';
+            document.getElementById('deliveryFee').value = billDetails.deliveryFee ? billDetails.deliveryFee.toFixed(2) : '';
+        }
+
+        function updateBillEntryStatus(billEntryReady) {
+            if (billEntryReady) {
+                document.getElementById('billSection').style.display = 'block';
+                populateBillDetailsForm();
+            } else {
+                document.getElementById('billSection').style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
